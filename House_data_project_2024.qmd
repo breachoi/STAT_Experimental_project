@@ -1,0 +1,105 @@
+title: "Housing_project_2024"
+format: 
+  html:
+    toc: true
+    embed-resources: true
+    code-line-numbers: true
+    theme: yeti
+editor: visual
+---
+
+```{r setup}
+#| include: false
+library(tidyverse)
+library(car)
+library(MASS)
+library(extrafont)
+library(ggplot2)
+```
+
+```{r data input}
+question1data <- read.csv("C:/Users/19725/Desktop/SMU MASDA/F24/Exp1/Final Project/train.csv")
+filtereddata <- question1data[question1data$Neighborhood %in% c('NAmes', 'Edwards', 'BrkSide'), ]
+finalq1 <- filtereddata[c('Neighborhood', 'GrLivArea', 'SalePrice')]
+
+```
+
+ASSUMPTIONS:
+
+```{r log log transformation}
+#Fit log-area and log-saleprice transformation with interaction term
+finalq1$logGrLivArea <- log(finalq1$GrLivArea)
+finalq1$logSalePrice <- log(finalq1$SalePrice)
+salesprice.lm_bothlog <- lm(logSalePrice ~ logGrLivArea + Neighborhood + logGrLivArea * Neighborhood, data = finalq1)
+
+#Diagnostic plots 
+par(mfrow=c(2,2))
+plot(salesprice.lm_bothlog)
+```
+
+Conclusion: yes neighborhood matters so model is:
+logSalePrice ~ logGrLivArea + Neighborhood + logGrLivArea * Neighborhood
+which is 
+
+$$\mathbb{\hat{log(SalePrice)}= \beta_0+\beta_1\cdot GrLivArea + \beta_2\cdot Neighborhood:NorthAmes + \beta_3\cdot Neighborhood:Edwards} +\beta_4\cdot GrLivArea* Neighborhood:NorthAmes + \beta_5\cdot GrLivArea* Neighborhood:NorthAmes$$
+
+
+```{r}
+ggplot(finalq1, aes(x=logGrLivArea, y=logSalePrice, shape=Neighborhood, color=Neighborhood)) +
+  geom_point(size=2, shape = 16) +
+  geom_smooth(method=lm, aes(fill=Neighborhood)) +  # You can remove this line if you don't want regression lines
+  ggtitle("Ames Housing Model") +
+  theme_bw() +
+  xlab("Log(GrLivArea)") +
+  ylab("Log(SalePrice)") +
+  theme(
+    legend.position = "bottom", 
+    plot.title = element_text(hjust = 0.5, size = 30),  # Increase plot title size
+    axis.title = element_text(size = 18),  # Increase axis title size
+    axis.text = element_text(size = 14),  # Increase axis tick label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 14)  # Increase legend text size
+  ) +
+  labs(color = 'Neighborhood', shape = 'Neighborhood', fill = 'Neighborhood')
+```
+
+```{r}
+ggplot(finalq1, aes(x=logGrLivArea, y=logSalePrice, shape=Neighborhood, color=Neighborhood)) +
+  geom_point(size=2, shape = 16) +
+  ggtitle("Ames Housing Data") +
+  theme_bw() +
+  xlab("Log(GrLivArea)") +
+  ylab("Log(SalePrice)") +
+  theme(
+    legend.position = "bottom", 
+    plot.title = element_text(hjust = 0.5, size = 30),  # Increase plot title size
+    axis.title = element_text(size = 18),  # Increase axis title size
+    axis.text = element_text(size = 14),  # Increase axis tick label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 14)  # Increase legend text size
+  ) +
+  labs(color = 'Neighborhood', shape = 'Neighborhood', fill = 'Neighborhood')
+```
+
+Do we need interaction terms?
+```{r }
+#Fit a model with all possible interactions
+salesprice.lm_bothlog <- lm(logSalePrice ~ logGrLivArea + Neighborhood + logGrLivArea * Neighborhood, data = finalq1)
+
+#Reduced model
+salesprice.lm2_bothlog <- lm(logSalePrice ~ logGrLivArea + Neighborhood, data = finalq1)
+
+#Extra sum of squares test
+#Must list the reduced model first
+anova(salesprice.lm2_bothlog, salesprice.lm_bothlog) 
+```
+```{r model}
+summary(salesprice.lm_bothlog)
+```
+
+
+```{r CI}
+confint(salesprice.lm_bothlog)
+```
+
+
